@@ -1,0 +1,263 @@
+﻿@model List<BusTicketing.ViewModels.TripVm>
+
+@{
+    Layout = "_Layout";
+
+    var showModal = TempData["ShowTripModal"]?.ToString() ?? "false";
+    var errHtml = TempData["ErrorDetailsHtml"]?.ToString() ?? "";
+
+    var routes = ViewBag.Routes as IEnumerable<(int Id, string Name)>
+                 ?? Enumerable.Empty<(int Id, string Name)>();
+
+    var buses = ViewBag.Buses as IEnumerable<(int Id, string Reg)>
+                ?? Enumerable.Empty<(int Id, string Reg)>();
+}
+
+<div class="container-fluid mt-2">
+
+    @* ===== SUCCESS ===== *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-1"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @* ===== ERROR ===== *@
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <div class="fw-bold mb-1">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                @TempData["ErrorMessage"]
+            </div>
+            @Html.Raw(errHtml)
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0">
+            <i class="bi bi-calendar-check me-1"></i> Trips
+        </h4>
+
+        <button class="btn btn-dark-blue"
+                data-bs-toggle="modal"
+                data-bs-target="#tripModal"
+                onclick="clearForm()">
+            <i class="bi bi-plus-circle me-1"></i> Add Trip
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table id="tripsTable" class="table table-striped table-bordered nowrap w-100">
+            <thead class="table-dark">
+                <tr>
+                    <th>Route</th>
+                    <th>Bus</th>
+                    <th>Departure</th>
+                    <th>Arrival</th>
+                    <th>Status</th>
+                    <th style="width:140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>
+                            <i class="bi bi-map me-1 text-muted"></i>
+                            @t.RouteName
+                        </td>
+                        <td>
+                            <i class="bi bi-bus-front me-1 text-muted"></i>
+                            @t.BusReg
+                        </td>
+                        <td>@t.DepartureTimeLocal.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@(t.ArrivalTimeLocal?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                        <td>
+                            <span class="badge
+                                    @(t.Status == 1 ? "bg-success" :
+                                                                    t.Status == 2 ? "bg-secondary" : "bg-warning text-dark")">
+                                @(t.Status == 1 ? "Active" :
+                                                            t.Status == 2 ? "Completed" : "Draft")
+                        </span>
+                    </td>
+                    <td class="text-nowrap">
+                        <button class="btn btn-sm btn-warning edit-trip-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#tripModal"
+                                data-id="@t.Id"
+                                data-routeid="@t.RouteId"
+                                data-busid="@t.BusId"
+                                data-departure="@t.DepartureTimeLocal.ToString("yyyy-MM-ddTHH:mm")"
+                                data-arrival="@(t.ArrivalTimeLocal?.ToString("yyyy-MM-ddTHH:mm") ?? "")"
+                                data-status="@t.Status">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+
+                            <form method="post"
+                                  asp-action="Delete"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Delete this trip?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@t.Id" />
+                                <button class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ================= MODAL ================= *@
+<div class="modal fade" id="tripModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="post" asp-action="Save" class="needs-validation" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-bus-front me-1"></i> Trip Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="tripId" value="@TempData["Form.Id"] ?? 0" />
+                    <input type="hidden" name="AgencyId" value="1" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Route</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-map"></i></span>
+                            <select class="form-select" name="RouteId" id="routeId" required>
+                                <option value="">Select route</option>
+                                @foreach (var r in routes)
+                                {
+                                    <option value="@r.Id">@r.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="invalid-feedback">Route is required.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Bus</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-bus-front"></i></span>
+                            <select class="form-select" name="BusId" id="busId" required>
+                                <option value="">Select bus</option>
+                                @foreach (var b in buses)
+                                {
+                                    <option value="@b.Id">@b.Reg</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="invalid-feedback">Bus is required.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Departure Time</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                            <input type="datetime-local"
+                                   class="form-control"
+                                   name="DepartureTimeLocal"
+                                   id="departure"
+                                   value="@TempData["Form.Departure"]"
+                                   required />
+                        </div>
+                        <div class="invalid-feedback">Departure time is required.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Arrival Time</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-clock-history"></i></span>
+                            <input type="datetime-local"
+                                   class="form-control"
+                                   name="ArrivalTimeLocal"
+                                   id="arrival"
+                                   value="@TempData["Form.Arrival"]" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-info-circle"></i></span>
+                            <select class="form-select" name="Status" id="status" required>
+                                <option value="0">Draft</option>
+                                <option value="1">Active</option>
+                                <option value="2">Completed</option>
+                            </select>
+                        </div>
+                        <div class="invalid-feedback">Status is required.</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Close
+                    </button>
+                    <button type="submit" class="btn btn-dark-blue">
+                        <i class="bi bi-save"></i> Save Trip
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+
+            $('#tripsTable').DataTable({
+                responsive: true,
+                dom: 'Bfrtip',
+                buttons: ['copy', 'excel', 'csv', 'pdf', 'print', 'colvis']
+            });
+
+            if ('@showModal'.toLowerCase() === 'true') {
+                new bootstrap.Modal(document.getElementById('tripModal')).show();
+            }
+
+            $('.needs-validation').on('submit', function (e) {
+                if (!this.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                $(this).addClass('was-validated');
+            });
+
+            $('#tripsTable').on('click', '.edit-trip-btn', function () {
+                const b = $(this);
+                $('#tripId').val(b.data('id'));
+                $('#routeId').val(b.data('routeid'));
+                $('#busId').val(b.data('busid'));
+                $('#departure').val(b.data('departure'));
+                $('#arrival').val(b.data('arrival'));
+                $('#status').val(b.data('status'));
+            });
+        });
+
+        function clearForm() {
+            $('#tripId').val(0);
+            $('#routeId').val('');
+            $('#busId').val('');
+            $('#departure').val('');
+            $('#arrival').val('');
+            $('#status').val(0);
+            $('.needs-validation').removeClass('was-validated');
+        }
+    </script>
+}

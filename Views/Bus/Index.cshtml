@@ -1,0 +1,379 @@
+﻿@model List<BusTicketing.ViewModels.BusFormVm>
+
+@{
+    Layout = "_Layout";
+    string showModal = TempData["ShowBusModal"]?.ToString() ?? "false";
+    string errHtml = TempData["ErrorDetailsHtml"]?.ToString() ?? "";
+    var statusOptions = (IEnumerable<(int value, string text)>)ViewBag.StatusOptions ?? new List<(int, string)>();
+    var fuelTypes = (IEnumerable<(int value, string text)>)ViewBag.FuelTypes ?? new List<(int, string)>();
+    var seatLayouts = (IEnumerable<dynamic>)ViewBag.SeatLayouts ?? new List<dynamic>();
+    var years = ((IEnumerable<int>)ViewBag.YearOptions) ?? Enumerable.Range(DateTime.UtcNow.Year - 30, 31);
+}
+
+<div class="container-fluid mt-2">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> @TempData["ErrorMessage"]</div>
+            @Html.Raw(errHtml)
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0"><i class="bi bi-bus-front-fill me-2"></i> Buses</h4>
+
+        <div>
+            <!-- Add New Bus Modal Button -->
+            <button class="btn btn-dark-blue" data-bs-toggle="modal" data-bs-target="#busModal" onclick="clearForm()">
+                <i class="bi bi-plus-circle me-1"></i> Add New Bus
+            </button>
+
+            <!-- Redirect to Bus Amenities page -->
+            <a href="@Url.Action("Index", "BusAmenities", new { area = "" })" class="btn btn-secondary ms-2">
+                <i class="bi bi-list-check me-1"></i> Manage Bus Amenities
+            </a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table id="busesTable" class="table table-striped table-bordered display nowrap" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Plate Number</th>
+                    <th>Reference Number</th>
+                    <th>Make / Model</th>
+                    <th>Engine Number</th>
+                    <th>Year of Make</th>
+                    <th>Registration Date</th>
+                    <th>Seat Layout</th>
+                    <th>Mileage</th>
+                    <th>Capacity</th>
+                    <th>Status</th>
+                    <th>Agency</th>
+                    <th>Amenities</th>
+                    <th style="width:200px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model ?? new List<BusTicketing.ViewModels.BusFormVm>())
+                {
+                    <tr>
+                        <td>@b.PlateNumber </td>
+                        <td>@b.ReferenceNumber </td>
+                        <td>@b.MakeModel</td>
+                        <td>@b.EngineNumber </td>
+                        <td>@b.YearOfMake</td>
+                        <td>@b.RegistrationDate?.ToString("yyyy-MM-dd") </td>
+                        <td>@b.SeatLayout </td>
+                        <td>@b.Mileage</td>
+                        <td>@b.Capacity</td>
+                        <td>
+                            @{
+                                string statusText = b.Status switch
+                                {
+                                    0 => "In Service",
+                                    1 => "Maintenance",
+                                    2 => "Inactive",
+                                    _ => $"Unknown({b.Status})"
+                                };
+                            }
+                            @statusText
+                        </td>
+                        <td>@b.AgencyName </td>
+                        <td>
+                            @if (b.Amenities.Any())
+                            {
+                                @string.Join(", ", b.Amenities)
+                            }
+                            else
+                            {
+                                <em>No amenities</em>
+                            }
+                        </td>
+                        <td class="text-nowrap">
+                            <button class="btn btn-sm btn-warning me-1 edit-bus-btn"
+                                    data-bs-toggle="modal" data-bs-target="#busModal"
+                                    data-id="@b.BusId"
+                                    data-plate="@b.PlateNumber"
+                                    data-ref="@b.ReferenceNumber"
+                                    data-chassis="@b.ChassisNumber"
+                                    data-engine="@b.EngineNumber"
+                                    data-makemodel="@b.MakeModel"
+                                    data-mileage="@b.Mileage"
+                                    data-year="@b.YearOfMake"
+                                    data-capacity="@b.Capacity"
+                                    data-fuel="@b.FuelType"
+                                    data-status="@b.Status"
+                                    data-seatlayout="@b.SeatLayoutId"
+                                    data-regdate="@b.RegistrationDate?.ToString("yyyy-MM-dd")">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <form method="post" asp-action="Delete" class="d-inline" onsubmit="return confirm('Delete this bus?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="busId" value="@b.BusId" />
+                                <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Bus Modal -->
+<div class="modal fade" id="busModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <form method="post" asp-action="Save" class="needs-validation" novalidate>
+            @Html.AntiForgeryToken()
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title"><i class="bi bi-bus-front-fill me-1"></i> Bus Management</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    @{
+                        int busId = int.TryParse(TempData["Form.BusId"]?.ToString(), out var id) ? id : 0;
+                    }
+                    <input type="hidden" name="BusId" id="busId" value="@busId" />
+
+                    <div class="row g-3">
+                        <!-- Plate Number -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-card-text me-1"></i> Plate Number</label>
+                            <input type="text" name="PlateNumber" id="plateNumber" class="form-control" maxlength="32" required
+                                   placeholder="Enter plate number"
+                                   value="@TempData["Form.PlateNumber"] ?? """/>
+                            <div class="invalid-feedback">Plate number is required.</div>
+                        </div>
+
+                        <!-- Reference Number -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-hash me-1"></i> Reference Number</label>
+                            <input type="text" name="ReferenceNumber" id="referenceNumber" class="form-control" maxlength="32"
+                                   placeholder="Enter reference number"
+                                   value="@TempData["Form.ReferenceNumber"] ?? """/>
+                        </div>
+
+                        <!-- Chassis Number -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-hash me-1"></i> Chassis Number</label>
+                            <input type="text" name="ChassisNumber" id="chassisNumber" class="form-control" maxlength="64" required
+                                   placeholder="Enter chassis number"
+                                   value="@TempData["Form.ChassisNumber"] ?? """/>
+                            <div class="invalid-feedback">Chassis number is required.</div>
+                        </div>
+
+                        <!-- Engine Number -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-gear me-1"></i> Engine Number</label>
+                            <input type="text" name="EngineNumber" id="engineNumber" class="form-control" maxlength="64"
+                                   placeholder="Enter engine number"
+                                   value="@TempData["Form.EngineNumber"] ?? """/>
+                        </div>
+
+                        <!-- Make / Model -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-car-front me-1"></i> Make / Model</label>
+                            <input type="text" name="MakeModel" id="makeModel" class="form-control" maxlength="64"
+                                   placeholder="Enter make/model"
+                                   value="@TempData["Form.MakeModel"] ?? """/>
+                        </div>
+
+                        <!-- Mileage -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-speedometer2 me-1"></i> Mileage</label>
+                            @{
+                                int mileage = int.TryParse(TempData["Form.Mileage"]?.ToString(), out var m) ? m : 0;
+                            }
+                            <input type="number" name="Mileage" id="mileage" class="form-control" min="0" step="1" required
+                                   placeholder="Enter mileage"
+                                   value="@mileage"/>
+                            <div class="invalid-feedback">Mileage must be 0 or higher.</div>
+                        </div>
+
+                        <!-- Year of Make -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-calendar3 me-1"></i> Year of Make</label>
+                            @{
+                                var years = ViewBag.YearOptions as IEnumerable<int> ?? Enumerable.Empty<int>();
+                                var postedYearStr = TempData["Form.YearOfMake"]?.ToString();
+                                int postedYear = int.TryParse(postedYearStr, out var py) ? py : DateTime.UtcNow.Year;
+                            }
+                            <select name="YearOfMake" id="year" class="form-select" required>
+                                <option value="">-- Select year --</option>
+                                @foreach (var y in years)
+                                {
+                                    if (y == postedYear)
+                                    {
+                                        <option value="@y" selected="selected">@y</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@y">@y</option>
+                                    }
+                                }
+                            </select>
+                            <div class="invalid-feedback">Year is required.</div>
+                        </div>
+
+
+                        <!-- Registration Date -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-calendar2-check me-1"></i> Registration Date</label>
+                            @{
+                                var regDateStr = TempData["Form.RegistrationDate"]?.ToString();
+                                DateTime regDate = DateTime.TryParse(regDateStr, out var dt) ? dt : DateTime.UtcNow;
+                            }
+                            <input type="date" name="RegistrationDate" id="registrationDate" class="form-control" 
+                                   value="@regDate.ToString("yyyy-MM-dd")" required />
+                            <div class="invalid-feedback">Registration date is required.</div>
+                        </div>
+
+                        <!-- Capacity -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-grid-3x3-gap-fill me-1"></i> Capacity</label>
+                            @{
+                                int capacity = int.TryParse(TempData["Form.Capacity"]?.ToString(), out var c) ? c : 1;
+                            }
+                            <input type="number" name="Capacity" id="capacity" class="form-control" min="1" step="1" required
+                                   placeholder="Enter seat capacity"
+                                   value="@capacity"/>
+                            <div class="invalid-feedback">Capacity must be at least 1.</div>
+                        </div>
+
+                        <!-- Fuel Type -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-fuel-pump me-1"></i> Fuel Type</label>
+                            @{
+                                int postedFuel = int.TryParse(TempData["Form.FuelType"]?.ToString(), out var pf) ? pf : 0;
+                            }
+                            <select name="FuelType" id="fuelType" class="form-select" required>
+                                @foreach (var ft in fuelTypes)
+                                {
+                                    <option value="@ft.value" selected="@(postedFuel == ft.value)">@ft.text</option>
+                                }
+                            </select>
+                            <div class="invalid-feedback">Fuel type is required.</div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-check-circle me-1"></i> Status</label>
+                            @{
+                                int postedStatus = int.TryParse(TempData["Form.Status"]?.ToString(), out var ps) ? ps : 0;
+                            }
+                            <select name="Status" id="status" class="form-select" required>
+                                @foreach (var st in statusOptions)
+                                {
+                                    <option value="@st.value" selected="@(postedStatus == st.value)">@st.text</option>
+                                }
+                            </select>
+                            <div class="invalid-feedback">Status is required.</div>
+                        </div>
+
+                        <!-- Seat Layout -->
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-grid me-1"></i> Seat Layout</label>
+                            @{
+                                int postedSeatLayoutId = int.TryParse(TempData["Form.SeatLayoutId"]?.ToString(), out var sId) ? sId : 0;
+                            }
+                            <select name="SeatLayoutId" id="seatLayoutId" class="form-select">
+                                <option value="">-- Select seat layout (optional) --</option>
+                                @foreach (var sl in seatLayouts)
+                                {
+                                    <option value="@sl.Id" selected="@(postedSeatLayoutId == (int)sl.Id)">@sl.Display</option>
+                                }
+                            </select>
+                            <div class="form-text">Optional; must exist in dbo.SeatLayouts if provided.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Close</button>
+                    <button type="submit" class="btn btn-dark-blue"><i class="bi bi-save"></i> Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+
+
+        $(function () {
+            $('#busesTable').DataTable({
+                responsive: true,
+                dom: 'Bfrtip',
+                buttons: [
+                    { extend: 'copyHtml5', text: '<i class="bi bi-clipboard me-1"></i> Copy', className: 'btn btn-sm btn-outline-primary' },
+                    { extend: 'excelHtml5', text: '<i class="bi bi-file-earmark-excel me-1"></i> Excel', className: 'btn btn-sm btn-outline-success' },
+                    { extend: 'csvHtml5', text: '<i class="bi bi-filetype-csv me-1"></i> CSV', className: 'btn btn-sm btn-outline-warning' },
+                    { extend: 'pdfHtml5', text: '<i class="bi bi-file-earmark-pdf me-1"></i> PDF', className: 'btn btn-sm btn-outline-danger' },
+                    { extend: 'print', text: '<i class="bi bi-printer me-1"></i> Print', className: 'btn btn-sm btn-outline-info' },
+                    { extend: 'colvis', text: '<i class="bi bi-eye me-1"></i> Columns', className: 'btn btn-sm btn-outline-secondary' }
+                ]
+            });
+
+            if ('@showModal'.toLowerCase() === 'true') new bootstrap.Modal(document.getElementById('busModal')).show();
+
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                });
+            });
+
+            $('#busesTable').on('click', '.edit-bus-btn', function () {
+                const btn = $(this);
+                $('#busId').val(btn.data('id') ?? 0);
+                $('#plateNumber').val(btn.data('plate') ?? '');
+                $('#referenceNumber').val(btn.data('ref') ?? '');
+                $('#chassisNumber').val(btn.data('chassis') ?? '');
+                $('#engineNumber').val(btn.data('engine') ?? '');
+                $('#makeModel').val(btn.data('makemodel') ?? '');
+                $('#mileage').val(btn.data('mileage') ?? 0);
+                $('#year').val(btn.data('year') ?? (new Date()).getFullYear());
+                $('#capacity').val(btn.data('capacity') ?? 1);
+                $('#fuelType').val(btn.data('fuel') ?? 0);
+                $('#status').val(btn.data('status') ?? 0);
+                $('#seatLayoutId').val(btn.data('seatlayout') ?? '');
+                $('#registrationDate').val(btn.data('regdate') ?? (new Date()).toISOString().split('T')[0]);
+            });
+        });
+
+        function clearForm() {
+            $('#busId').val('0');
+            $('#plateNumber').val('');
+            $('#referenceNumber').val('');
+            $('#chassisNumber').val('');
+            $('#engineNumber').val('');
+            $('#makeModel').val('');
+            $('#mileage').val(0);
+            $('#year').val((new Date()).getFullYear());
+            $('#capacity').val(1);
+            $('#fuelType').val(0);
+            $('#status').val(0);
+            $('#seatLayoutId').val('');
+            $('#registrationDate').val((new Date()).toISOString().split('T')[0]);
+            $('.needs-validation').removeClass('was-validated');
+        }
+    </script>
+}

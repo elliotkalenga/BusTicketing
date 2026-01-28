@@ -1,0 +1,191 @@
+﻿@model List<BusTicketing.Models.Auth.UserRole>
+@{
+    Layout = "_Layout";
+}
+
+<div class="container-fluid mt-2">
+
+    <!-- Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0"><i class="bi bi-people-fill me-2"></i> Assign Roles to Users</h4>
+        <button class="btn btn-dark-blue" data-bs-toggle="modal" data-bs-target="#assignModal" onclick="clearForm()">
+            <i class="bi bi-plus-circle me-1"></i> Assign Roles
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table id="assignTable" class="table table-striped table-bordered display nowrap" style="width:100%">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Roles</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model.GroupBy(x => x.UserId))
+                {
+                    var firstRole = u.First();
+                    <tr>
+                        <td>@firstRole.User?.Username</td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-roles-btn" data-userid="@u.Key">
+                                <i class="bi bi-eye-fill"></i> View Roles
+                            </button>
+                            <div class="roles-list mt-1 d-none">
+                                <div class="row">
+                                    @foreach (var ur in u)
+                                    {
+                                        <div class="col-12 col-md-4 mb-1">
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-shield-fill-check me-1"></i>@ur.Role?.Name
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Assign Roles Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" asp-action="Save" class="needs-validation" novalidate>
+            <div class="modal-content">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title"><i class="bi bi-shield-lock me-1"></i> Assign Roles</h5>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i> Close
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label><i class="bi bi-person"></i> Select User</label>
+                        <select class="form-control" name="UserId" id="UserId" required>
+                            <option value="">-- Select User --</option>
+                            @foreach (var u in ViewBag.Users)
+                            {
+                                <option value="@u.Id">@u.Username</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label><i class="bi bi-shield"></i> Select Roles</label>
+                        <div class="row" id="rolesContainer">
+                            @foreach (var r in ViewBag.Roles)
+                            {
+                                <div class="col-12 col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input role-checkbox custom-checkbox" type="checkbox" name="RoleIds" value="@r.Id" id="role_@r.Id">
+                                        <label class="form-check-label" for="role_@r.Id">
+                                            <i class="bi bi-shield-fill-check me-1"></i> @r.Name
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <small class="text-muted">Tick to assign roles.</small>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i> Close
+                    </button>
+                    <button type="submit" class="btn btn-dark-blue">
+                        <i class="bi bi-save me-1"></i> Save
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .custom-checkbox {
+        border: 2px solid black;
+        width: 1.2rem;
+        height: 1.2rem;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const ts = getTimestamp();
+
+            $('#assignTable').DataTable({
+                responsive: true,
+                dom: 'Bfrtip',
+                buttons: [
+                    { extend: 'copyHtml5', className: 'btn btn-sm btn-outline-primary', title: 'UserRoles_' + ts },
+                    { extend: 'excelHtml5', className: 'btn btn-sm btn-outline-success', title: 'UserRoles_' + ts },
+                    { extend: 'csvHtml5', className: 'btn btn-sm btn-outline-warning', title: 'UserRoles_' + ts },
+                    { extend: 'pdfHtml5', className: 'btn btn-sm btn-outline-danger', title: 'UserRoles_' + ts },
+                    { extend: 'print', className: 'btn btn-sm btn-outline-info', title: 'UserRoles_' + ts },
+                    { extend: 'colvis', className: 'btn btn-sm btn-outline-secondary' }
+                ]
+            });
+
+            // Toggle roles list
+            $('#assignTable').on('click', '.view-roles-btn', function () {
+                var $btn = $(this);
+                var $row = $btn.closest('tr');
+                if ($row.hasClass('child')) $row = $row.prev();
+                $row.find('.roles-list').toggleClass('d-none');
+            });
+
+            // User -> Roles mapping
+            var userRolesMap = {};
+            @foreach (var u in Model.GroupBy(x => x.UserId))
+            {
+                        <text>
+                        userRolesMap[@u.Key] = [@string.Join(",", u.Select(x => x.RoleId))];
+                        </text>
+            }
+
+            // Update checkboxes when user is selected
+            $('#UserId').on('change', function () {
+                var selectedUserId = $(this).val();
+                $('.role-checkbox').prop('checked', false);
+                if (selectedUserId && userRolesMap[selectedUserId]) {
+                    var roles = userRolesMap[selectedUserId].toString().split(',');
+                    roles.forEach(function(rid) {
+                        $('#role_' + rid).prop('checked', true);
+                    });
+                }
+            });
+        });
+
+        function clearForm() {
+            $('#UserId').val('');
+            $('.role-checkbox').prop('checked', false);
+        }
+    </script>
+}

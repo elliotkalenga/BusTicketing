@@ -1,0 +1,204 @@
+﻿@model List<BusTicketing.ViewModels.AreaFormVm>
+
+@{
+    Layout = null;
+    var towns = ViewBag.Towns as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    string showModal = TempData["ShowAreaModal"]?.ToString() ?? "false";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Areas</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+
+    <style>
+        .btn-dark-blue {
+            background-color: #0b3d91;
+            color: #fff;
+        }
+
+            .btn-dark-blue:hover {
+                background-color: #082b68;
+                color: #fff;
+            }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-3">
+
+        <!-- Success Message -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <!-- Header + Add Button -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="m-0"><i class="bi bi-pin-map-fill me-2"></i> Areas</h4>
+            <button class="btn btn-dark-blue" id="addAreaBtn">
+                <i class="bi bi-plus-circle me-1"></i> Add Area
+            </button>
+        </div>
+
+        <!-- Areas Table -->
+        <table id="areaTable" class="table table-striped table-bordered w-100">
+            <thead>
+                <tr>
+                    <th>Area</th>
+                    <th>Town</th>
+                    <th style="width:160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model ?? Enumerable.Empty<BusTicketing.ViewModels.AreaFormVm>())
+                {
+                    <tr>
+                        <td>@a.Name</td>
+                        <td>@a.TownName</td>
+                        <td>
+                            <!-- Edit Button -->
+                            <button class="btn btn-sm btn-warning edit-btn"
+                                    data-id="@a.Id"
+                                    data-name="@a.Name"
+                                    data-town="@a.TownId">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+
+                            <!-- Delete Button -->
+                            <form method="post" asp-action="Delete" asp-controller="Areas" class="d-inline"
+                                  onsubmit="return confirm('Delete this area?');">
+                                <input type="hidden" name="id" value="@a.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal fade" id="areaModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form method="post" asp-action="Save" asp-controller="Areas">
+                <div class="modal-content">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title"><i class="bi bi-pin-map-fill me-1"></i> Area</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <input type="hidden" id="areaId" name="Id" value="0" />
+
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-signpost-2 me-1"></i> Area Name</label>
+                            <input class="form-control" id="areaName" name="Name" placeholder="Enter area name" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-map me-1"></i> Town</label>
+                            <select class="form-select" id="townSelect" name="TownId" required>
+                                <option value="">-- Select Town --</option>
+                                @foreach (var t in towns)
+                                {
+                                    <option value="@t.Id">@t.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-dark-blue"><i class="bi bi-save me-1"></i> Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <!-- DataTables Buttons & Export -->
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            function timestamp() {
+                const d = new Date();
+                return d.getFullYear() + '-' +
+                       String(d.getMonth()+1).padStart(2,'0') + '-' +
+                       String(d.getDate()).padStart(2,'0') + '_' +
+                       String(d.getHours()).padStart(2,'0') + '-' +
+                       String(d.getMinutes()).padStart(2,'0') + '-' +
+                       String(d.getSeconds()).padStart(2,'0');
+            }
+
+            // Initialize DataTable with export buttons and custom filenames
+            $('#areaTable').DataTable({
+                responsive: true,
+                dom: 'Bfrtip',
+                buttons: [
+                    { extend: 'copy', text: '<i class="bi bi-clipboard"></i> Copy', title: 'Areas_' + timestamp() },
+                    { extend: 'excel', text: '<i class="bi bi-file-earmark-excel"></i> Excel', title: 'Areas_' + timestamp() },
+                    { extend: 'csv', text: '<i class="bi bi-file-text"></i> CSV', title: 'Areas_' + timestamp() },
+                    { extend: 'pdf', text: '<i class="bi bi-file-earmark-pdf"></i> PDF', title: 'Areas_' + timestamp() },
+                    { extend: 'print', text: '<i class="bi bi-printer"></i> Print', title: 'Areas_' + timestamp() }
+                ]
+            });
+
+            // Add Area button
+            $('#addAreaBtn').click(function () {
+                clearAreaForm();
+                new bootstrap.Modal(document.getElementById('areaModal')).show();
+            });
+
+            // Edit Area button
+            $('#areaTable').on('click', '.edit-btn', function () {
+                const btn = $(this);
+                $('#areaId').val(btn.data('id'));
+                $('#areaName').val(btn.data('name'));
+                $('#townSelect').val(btn.data('town'));
+                new bootstrap.Modal(document.getElementById('areaModal')).show();
+            });
+
+            // Show modal if TempData triggered it
+            if ('@showModal'.toLowerCase() === 'true') {
+                new bootstrap.Modal(document.getElementById('areaModal')).show();
+            }
+        });
+
+        function clearAreaForm() {
+            $('#areaId').val(0);
+            $('#areaName').val('');
+            $('#townSelect').val('');
+        }
+    </script>
+</body>
+</html>

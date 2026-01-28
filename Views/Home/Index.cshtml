@@ -1,0 +1,360 @@
+﻿@{
+    ViewData["Title"] = ViewData["Title"] ?? "Bus Ticketing";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <style>
+        /* ===== Corporate Colors ===== */
+        :root {
+            --navy: #0b2c4d;
+            --gold: #d4af37;
+            --light-bg: #f8f9fa;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            font-family: "Century Gothic", CenturyGothic, AppleGothic, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+            /* Navy overlay + background image */
+            body::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                background: linear-gradient( rgba(11, 44, 77, 0.75), rgba(11, 44, 77, 0.75) ), url('/images/bgtt.jpg') center / cover no-repeat;
+                opacity: 0.3;
+                z-index: -1;
+            }
+
+        /* Navbar */
+        .navbar-custom {
+            background-color: var(--navy);
+        }
+
+        .navbar-brand span {
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        .nav-link {
+            color: #fff !important;
+            font-weight: 500;
+        }
+
+            .nav-link:hover {
+                color: var(--gold) !important;
+            }
+
+        .btn-login {
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+            .btn-login:hover {
+                background-color: var(--gold);
+                color: #000;
+            }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(rgba(11,44,77,0.85), rgba(11,44,77,0.85)), url('/images/bus-hero.jpg') center/cover no-repeat;
+            color: #fff;
+            border-radius: 1rem;
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+
+            .hero h1 span {
+                color: var(--gold);
+            }
+
+        /* Search Card */
+        .search-card {
+            margin-top: -2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+            border: none;
+        }
+
+        .btn-gold {
+            background-color: var(--gold);
+            color: #000;
+            font-weight: 600;
+        }
+
+            .btn-gold:hover {
+                background-color: #c9a52f;
+            }
+
+        /* Features */
+        .feature-icon {
+            font-size: 1.8rem;
+            color: var(--gold);
+        }
+
+        .bus-node {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+
+        /* Footer adjustments */
+        footer {
+            flex-shrink: 0;
+        }
+
+        @@media (min-width: 768px) {
+            .hero {
+                padding: 3rem;
+            }
+        }
+
+        /* Autocomplete */
+        .autocomplete-items div {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+            .autocomplete-items div:hover {
+                background-color: #f0f0f0;
+            }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand text-white fw-bold" href="/">
+                <i class="bi bi-bus-front-fill me-1"></i>Bus<span>Ticketing</span>
+            </a>
+
+            <a href="/Login" class="btn btn-login btn-sm d-lg-none ms-auto me-2">
+                <i class="bi bi-box-arrow-in-right"></i> Login
+            </a>
+
+            <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 mt-3 mt-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Trips">Trips</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Help">Help</a></li>
+                </ul>
+                <a href="/Login" class="btn btn-login d-none d-lg-inline-block">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== PAGE CONTENT ===== -->
+    <div class="container-fluid py-3 flex-grow-1">
+
+        <!-- Hero Carousel with Moving Bus in Background -->
+        <div id="heroCarousel" class="carousel slide position-relative mb-4" data-bs-ride="carousel" data-bs-interval="8000">
+
+            <!-- Moving Bus Icon (background) -->
+            <i class="bi bi-bus-front-fill bus-bg-icon position-absolute"></i>
+
+            <div class="carousel-inner">
+                <!-- Slide 1 -->
+                <div class="carousel-item active">
+                    <div class="hero d-flex flex-column justify-content-center align-items-center">
+                        <h1 class="fw-bold mb-2">Travel Smart with <span>Confidence</span></h1>
+                        <p class="mb-0">Safe, reliable & affordable bus journeys</p>
+                    </div>
+                </div>
+                <!-- Slide 2 -->
+                <div class="carousel-item">
+                    <div class="hero d-flex flex-column justify-content-center align-items-center">
+                        <h1 class="fw-bold mb-2">Book Your Tickets <span>Online</span></h1>
+                        <p class="mb-0">Save time and avoid queues with our online booking system</p>
+                    </div>
+                </div>
+                <!-- Slide 3 -->
+                <div class="carousel-item">
+                    <div class="hero d-flex flex-column justify-content-center align-items-center">
+                        <h1 class="fw-bold mb-2">Modern & Comfortable <span>Buses</span></h1>
+                        <p class="mb-0">Enjoy your journey with our safe and modern fleet</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+
+            <!-- Indicators -->
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true"></button>
+                <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+                <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+            </div>
+        </div>
+
+        <style>
+.hero {
+    position: relative;
+    overflow: hidden;
+    z-index: 1; /* text stays above bus */
+}
+
+.bus-bg-icon {
+    font-size: 4rem;           /* bigger bus */
+    color: #d4af37;            /* gold color */
+    top: 70%;                  /* near bottom of hero */
+    left: -80px;               /* start off-screen */
+    position: absolute;
+    z-index: 0;                 /* behind text */
+    animation: moveBus 8s linear infinite;
+    opacity: 0.8;              /* more visible */
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.5); /* subtle shadow/glow */
+}
+
+@@keyframes moveBus {
+    0% { left: -80px; }
+    100% { left: 100%; }
+}
+        </style>
+
+
+        <!-- Search -->
+        <div class="card search-card p-3 mx-2 mb-4">
+            <form method="get" action="/Trips/Search">
+                <div class="row g-2">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">From</label>
+                        <input type="text" id="departure" class="form-control" placeholder="Departure city" required autocomplete="off" />
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">To</label>
+                        <input type="text" id="destination" class="form-control" placeholder="Destination city" required autocomplete="off" />
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-semibold">Travel Date</label>
+                        <input type="date" class="form-control" required />
+                    </div>
+
+                    <div class="col-12 d-grid mt-2">
+                        <button type="submit" class="btn btn-gold btn-lg w-100 rounded-3 shadow-sm">
+                            <i class="bi bi-search me-2"></i> Find Bus Trips
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            const busTerminals = [
+                "Adoula","Baobab","Centre Ville","Entree Ville","Mwangeji",
+                "Kintambo","Lingwala","Gombe","Matete","Masina",
+                "Ngaliema","Limete","Kalamu"
+            ];
+
+            function setupAutocomplete(inputId) {
+                const input = document.getElementById(inputId);
+                input.addEventListener("input", function() {
+                    const val = this.value.toLowerCase();
+                    closeAllLists();
+                    if (!val) return false;
+                    const list = document.createElement("div");
+                    list.setAttribute("id", this.id + "-autocomplete-list");
+                    list.setAttribute("class", "autocomplete-items position-absolute bg-white shadow-sm rounded w-100");
+                    this.parentNode.appendChild(list);
+                    busTerminals.forEach(term => {
+                        if (term.toLowerCase().includes(val)) {
+                            const item = document.createElement("div");
+                            item.innerHTML = term.replace(new RegExp(val, "i"), match => `<strong>${match}</strong>`);
+                            item.addEventListener("click", function() {
+                                input.value = term;
+                                closeAllLists();
+                            });
+                            list.appendChild(item);
+                        }
+                    });
+                });
+                function closeAllLists() {
+                    const items = document.getElementsByClassName("autocomplete-items");
+                    for (let i = 0; i < items.length; i++) {
+                        items[i].parentNode.removeChild(items[i]);
+                    }
+                }
+                document.addEventListener("click", function(e) { closeAllLists(); });
+            }
+
+            setupAutocomplete("departure");
+            setupAutocomplete("destination");
+        </script>
+
+        <!-- Features -->
+        <div class="row text-center mt-4 g-3">
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm p-3 h-100">
+                    <i class="bi bi-shield-check feature-icon"></i>
+                    <p class="fw-semibold mt-2 mb-0">Secure Payments</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm p-3 h-100">
+                    <i class="bi bi-bus-front feature-icon"></i>
+                    <p class="fw-semibold mt-2 mb-0">Modern Buses</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm p-3 h-100">
+                    <i class="bi bi-clock-history feature-icon"></i>
+                    <p class="fw-semibold mt-2 mb-0">On-Time Trips</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm p-3 h-100">
+                    <i class="bi bi-headset feature-icon"></i>
+                    <p class="fw-semibold mt-2 mb-0">24/7 Support</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-2 mt-auto">
+        <hr class="bg-secondary my-1">
+        <div class="text-center small mb-1">
+            &copy; @DateTime.Now.Year Bus Ticketing System. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

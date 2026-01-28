@@ -1,0 +1,228 @@
+﻿@{
+    Layout = "_Layout";
+
+    // Ensure dropdowns are available for partials
+    var provincesModel = ViewBag.ProvincesModel as List<BusTicketing.ViewModels.ProvinceFormVm> ?? new List<BusTicketing.ViewModels.ProvinceFormVm>();
+    var townsModel = ViewBag.TownsModel as List<BusTicketing.ViewModels.TownFormVm> ?? new List<BusTicketing.ViewModels.TownFormVm>();
+    var areasModel = ViewBag.AreasModel as List<BusTicketing.ViewModels.AreaFormVm> ?? new List<BusTicketing.ViewModels.AreaFormVm>();
+
+    // For dropdowns in partials
+    ViewBag.Provinces = provincesModel;
+    ViewBag.Towns = townsModel;
+}<style>
+    /* Adjust tab visibility on mobile */
+    @@media (max-width: 991.98px) { /* for md and below */
+        .nav-tabs {
+            margin-top: 70px; /* adjust based on your navbar height */
+        }
+    }
+
+    /* Optional: make tab container scrollable horizontally if tabs overflow */
+    .nav-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+</style>
+
+
+<h4 class="mb-3">
+    <i class="bi bi-geo-alt-fill me-2"></i> Location Setup
+</h4>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#provinces">Provinces</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#towns">Towns</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#areas">Areas</a>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <div id="provinces" class="tab-pane fade show active">
+        @await Html.PartialAsync("~/Views/Provinces/_ProvincesIndex.cshtml", provincesModel)
+    </div>
+
+    <div id="towns" class="tab-pane fade">
+        @await Html.PartialAsync("~/Views/Towns/_TownsIndex.cshtml", townsModel)
+    </div>
+
+    <div id="areas" class="tab-pane fade">
+        @await Html.PartialAsync("~/Views/Areas/_AreasIndex.cshtml", areasModel)
+    </div>
+
+</div>
+
+<!-- ==================== Province Modal ==================== -->
+<div class="modal fade" id="provinceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" asp-action="Save" asp-controller="Provinces">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Province</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="provinceId" name="Id" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label">Province Name</label>
+                        <input class="form-control" id="provinceName" name="Name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Code</label>
+                        <input class="form-control" id="provinceCode" name="Code" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-dark-blue">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================== Town Modal ==================== -->
+<div class="modal fade" id="townModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" asp-action="Save" asp-controller="Towns">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Town</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="townId" name="Id" />
+                    <div class="mb-3">
+                        <label class="form-label">Town Name</label>
+                        <input class="form-control" id="townName" name="Name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Province</label>
+                        <select class="form-select" id="provinceSelect" name="ProvinceId" required>
+                            <option value="">-- Select Province --</option>
+                            @foreach (var p in ViewBag.Provinces)
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-dark-blue">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================== Area Modal ==================== -->
+<div class="modal fade" id="areaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" asp-action="Save" asp-controller="Areas">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Area</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="areaId" name="Id" />
+                    <div class="mb-3">
+                        <label class="form-label">Area Name</label>
+                        <input class="form-control" id="areaName" name="Name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Town</label>
+                        <select class="form-select" id="townSelect" name="TownId" required>
+                            <option value="">-- Select Town --</option>
+                            @foreach (var t in ViewBag.Towns)
+                            {
+                                <option value="@t.Id">@t.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-dark-blue">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            // Initialize DataTables
+            $('#provincesTable').DataTable({ responsive: true });
+            $('#townTable').DataTable({ responsive: true });
+            $('#areasTable').DataTable({ responsive: true });
+
+            // ==================== Provinces ====================
+            $('#provinces').on('click', '#addProvinceBtn', function () {
+                clearProvinceForm();
+                new bootstrap.Modal(document.getElementById('provinceModal')).show();
+            });
+
+            $('#provinces').on('click', '.edit-btn', function () {
+                const btn = $(this);
+                $('#provinceId').val(btn.data('id'));
+                $('#provinceName').val(btn.data('name'));
+                $('#provinceCode').val(btn.data('code'));
+                new bootstrap.Modal(document.getElementById('provinceModal')).show();
+            });
+
+            // ==================== Towns ====================
+            $('#towns').on('click', '#addTownBtn', function () {
+                clearTownForm();
+                new bootstrap.Modal(document.getElementById('townModal')).show();
+            });
+
+            $('#towns').on('click', '.edit-btn', function () {
+                const btn = $(this);
+                $('#townId').val(btn.data('id'));
+                $('#townName').val(btn.data('name'));
+                $('#provinceSelect').val(btn.data('province'));
+                new bootstrap.Modal(document.getElementById('townModal')).show();
+            });
+
+            // ==================== Areas ====================
+            $('#areas').on('click', '#addAreaBtn', function () {
+                clearAreaForm();
+                new bootstrap.Modal(document.getElementById('areaModal')).show();
+            });
+
+            $('#areas').on('click', '.edit-btn', function () {
+                const btn = $(this);
+                $('#areaId').val(btn.data('id'));
+                $('#areaName').val(btn.data('name'));
+                $('#townSelect').val(btn.data('town'));
+                new bootstrap.Modal(document.getElementById('areaModal')).show();
+            });
+
+        });
+
+        // ==================== Clear Form Functions ====================
+        function clearProvinceForm() {
+            $('#provinceId').val(0);
+            $('#provinceName').val('');
+            $('#provinceCode').val('');
+        }
+
+        function clearTownForm() {
+            $('#townId').val(0);
+            $('#townName').val('');
+            $('#provinceSelect').val('');
+        }
+
+        function clearAreaForm() {
+            $('#areaId').val(0);
+            $('#areaName').val('');
+            $('#townSelect').val('');
+        }
+    </script>
+}

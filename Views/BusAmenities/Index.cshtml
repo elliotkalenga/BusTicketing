@@ -1,0 +1,131 @@
+﻿@model List<BusTicketing.Models.Fleet.Bus>
+@{
+    Layout = "_Layout";
+    var allAmenities = ViewBag.AllAmenities as List<BusTicketing.Models.Fleet.BusAmenity>;
+    var busAmenitiesMap = ViewBag.BusAmenitiesMap as Dictionary<int, List<int>>;
+}
+
+<div class="container-fluid mt-2">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <h4 class="mb-3"><i class="bi bi-list-check me-2"></i> Assign Bus Amenities</h4>
+
+    <table id="busesTable" class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Plate Number</th>
+                <th>Make/Model</th>
+                <th>Capacity</th>
+                <th>Amenities</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var bus in Model)
+            {
+                <tr>
+                    <td>@bus.PlateNumber</td>
+                    <td>@bus.MakeModel</td>
+                    <td>@bus.Capacity</td>
+                    <td>
+                        @if (busAmenitiesMap.ContainsKey(bus.Id))
+                        {
+                            foreach (var aid in busAmenitiesMap[bus.Id])
+                            {
+                                var amenity = allAmenities.FirstOrDefault(x => x.Id == aid);
+                                if (amenity != null)
+                                {
+                                    <span class="badge bg-secondary">@amenity.Name</span>
+                                }
+                            }
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-info assign-btn"
+                                data-busid="@bus.Id"
+                                data-plate="@bus.PlateNumber"
+                                data-amenities="@string.Join(",", busAmenitiesMap.ContainsKey(bus.Id) ? busAmenitiesMap[bus.Id] : new List<int>())"
+                                data-bs-toggle="modal" data-bs-target="#assignModal">
+                            <i class="bi bi-pencil-square"></i> Assign
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Assign Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" asp-action="Save">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title"><i class="bi bi-list-check me-1"></i> Assign Amenities</h5>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle me-1"></i> Close</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="BusId" id="ModalBusId" />
+
+                    <div class="mb-3">
+                        <label>Bus</label>
+                        <input type="text" id="ModalBusName" class="form-control" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Select Amenities</label>
+                        <div class="row">
+                            @for (int i = 0; i < allAmenities.Count; i++)
+                            {
+                                <div class="col-12 col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input amenity-checkbox" name="AmenityIds"
+                                               value="@allAmenities[i].Id" id="amenity_@allAmenities[i].Id" />
+                                        <label class="form-check-label" for="amenity_@allAmenities[i].Id">@allAmenities[i].Name</label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-dark-blue">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function(){
+            $('.assign-btn').click(function(){
+                var busId = $(this).data('busid');
+                var plate = $(this).data('plate');
+                var amenities = $(this).data('amenities').toString().split(',');
+
+                $('#ModalBusId').val(busId);
+                $('#ModalBusName').val(plate);
+
+                $('.amenity-checkbox').prop('checked', false);
+                amenities.forEach(function(a){ if(a) $('#amenity_' + a).prop('checked', true); });
+            });
+
+            $('#busesTable').DataTable({ responsive:true });
+        });
+    </script>
+}

@@ -1,0 +1,281 @@
+﻿@using BusTicketing.Models.Company
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer V
+@model List<Agency>
+
+@{
+    Layout = "_Layout";
+    string ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+}
+
+<div class="container-fluid mt-2">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle-fill me-1"></i> @TempData["SuccessMessage"]
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> @TempData["ErrorMessage"]
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between mb-2">
+        <h4><i class="bi bi-building"></i> @V["AgencyManagement"]</h4>
+        <button class="btn btn-dark-blue" data-bs-toggle="modal"
+                data-bs-target="#agencyModal" onclick="clearForm()">
+            <i class="bi bi-plus-circle"></i> @V["NewAgency"]
+        </button>
+    </div>
+
+    <table id="agenciesTable" class="table table-striped table-bordered w-100">
+        <thead class="table-light">
+            <tr>
+                <th>Id</th>
+                <th>@V["AgencyName"]</th>
+                <th>@V["Company"]</th>
+                <th>@V["Phone"]</th>
+                <th>@V["Country"]</th>
+                <th>@V["Address"]</th>
+                <th>@V["RegistratioNnumber"]</th>
+                <th>@V["ServiceProvider"]</th>
+                <th>@V["Actions"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in Model)
+            {
+                <tr>
+                    <td>@a.Id</td>
+                    <td>@a.Name</td>
+                    <td>@a.CompanyName</td>
+                    <td>@a.Phone</td>
+                    <td>@a.Country</td>
+                    <td>@a.Location</td>
+                    <td>@a.RegistrationNumber</td>
+                    <td>@a.ServiceProCompany</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary edit-btn"
+                                data-id="@a.Id"
+                                data-name="@a.Name"
+                                data-company="@a.CompanyId"
+                                data-location="@a.Location"
+                                data-phone="@a.Phone"
+                                data-reg="@a.RegistrationNumber"
+                                data-service="@a.ServiceProCompany"
+                                data-country="@a.Country">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+
+                        <form method="post" asp-action="Delete" class="d-inline">
+                            <input type="hidden" name="id" value="@a.Id" />
+                            <button class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('@V["ConfirmDelete"].Value');">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="agencyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="post" asp-action="Save" class="needs-validation" novalidate>
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5>@V["AgencyManagement"]</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="agencyId" />
+
+                    <div class="row g-3">
+
+                        <!-- Agency Name -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-building me-1"></i> @V["AgencyName"]
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
+                                <input class="form-control"
+                                       name="Name"
+                                       id="agencyName"
+                                       placeholder="@V["EnterAgencyName"]"
+                                       required />
+                            </div>
+                        </div>
+
+                        <!-- Company -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-diagram-3-fill me-1"></i> @V["Company"]
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                <select class="form-select" name="CompanyId" id="agencyCompany" required>
+                                    <option value="">@V["SelectCompany"]</option>
+                                    @foreach (var c in ViewBag.Companies)
+                                    {
+                                        <option value="@c.Id">@c.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-geo-alt-fill me-1"></i> @V["Location"]
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-geo"></i></span>
+                                <input class="form-control"
+                                       name="Location"
+                                       id="agencyLocation"
+                                       placeholder="@V["EnterLocation"]" />
+                            </div>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-telephone-fill me-1"></i> @V["Phone"]
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-phone"></i></span>
+                                <input class="form-control"
+                                       name="Phone"
+                                       id="agencyPhone"
+                                       placeholder="@V["EnterPhone"]" />
+                            </div>
+                        </div>
+
+                        <!-- Registration Number -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-card-text me-1"></i> @V["RegistrationNumber"]
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                                <input class="form-control"
+                                       name="RegistrationNumber"
+                                       id="agencyReg"
+                                       placeholder="@V["EnterRegistrationNumber"]" />
+                            </div>
+                        </div>
+
+                        <!-- Service Pro Company -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-briefcase-fill me-1"></i> @V["ServiceProCompany"]
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+                                <input class="form-control"
+                                       name="ServiceProCompany"
+                                       id="agencyService"
+                                       placeholder="@V["EnterServiceProvider"]" />
+                            </div>
+                        </div>
+
+                        <!-- Country -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-flag-fill me-1"></i> @V["Country"]
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-globe"></i>
+                                </span>
+                                <select class="form-select" name="Country" id="agencyCountry">
+                                    <option value="">@V["SelectCountry"]</option>
+                                    <option value="Democratic Republic of the Congo">Democratic Republic of the Congo (DRC)</option>
+                                    <option value="Republic of the Congo">Republic of the Congo (Congo)</option>
+                                    <option value="Malawi">Malawi</option>
+                                    <option value="Zambia">Zambia</option>
+                                    <option value="Tanzania">Tanzania</option>
+                                    <option value="Mozambique">Mozambique</option>
+                                    <option value="South Africa">South Africa</option>
+                                    <option value="Zimbabwe">Zimbabwe</option>
+                                    <option value="Kenya">Kenya</option>
+                                    <option value="Uganda">Uganda</option>
+                                    <option value="Rwanda">Rwanda</option>
+                                    <option value="Nigeria">Nigeria</option>
+                                    <option value="Ghana">Ghana</option>
+                                    <option value="Egypt">Egypt</option>
+                                    <option value="United States">United States</option>
+                                    <option value="United Kingdom">United Kingdom</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="China">China</option>
+                                    <option value="India">India</option>
+                                    <option value="Germany">Germany</option>
+                                    <option value="France">France</option>
+                                    <option value="Australia">Australia</option>
+                                </select>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">@V["Close"]</button>
+                    <button class="btn btn-dark-blue">@V["Save"]</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            // Initialize DataTable with export buttons
+            $('#agenciesTable').DataTable({
+                responsive: true,
+                dom: 'Bfrtip',
+                buttons: ['copy', 'excel', 'csv', 'pdf', 'print']
+            });
+
+            // Clear form for new agency
+            window.clearForm = function () {
+                $('#agencyId').val(0);
+                $('#agencyName,#agencyLocation,#agencyPhone,#agencyReg,#agencyService,#agencyCountry').val('');
+                $('#agencyCompany').val('');
+            };
+
+            // Use event delegation for dynamically created edit buttons
+            $('#agenciesTable').on('click', '.edit-btn', function () {
+                const a = $(this);
+                $('#agencyId').val(a.data('id'));
+                $('#agencyName').val(a.data('name'));
+                $('#agencyCompany').val(a.data('company'));
+                $('#agencyLocation').val(a.data('location'));
+                $('#agencyPhone').val(a.data('phone'));
+                $('#agencyReg').val(a.data('reg'));
+                $('#agencyService').val(a.data('service'));
+                $('#agencyCountry').val(a.data('country'));
+
+                // Show the modal manually
+                const modal = new bootstrap.Modal(document.getElementById('agencyModal'));
+                modal.show();
+            });
+
+        });
+    </script>
+}

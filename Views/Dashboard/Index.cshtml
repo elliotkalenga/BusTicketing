@@ -1,0 +1,144 @@
+﻿@model BusTicketing.Controllers.DashboardVm
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Dashboard";
+}
+
+<style>
+    .kpi-card {
+        min-height: 120px;
+        border-radius: 12px;
+    }
+
+        .kpi-card h6 {
+            font-size: 0.75rem;
+            letter-spacing: .05em;
+            margin-bottom: 4px;
+        }
+
+        .kpi-card h3 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 0;
+        }
+
+    .kpi-icon {
+        font-size: 2.2rem;
+        opacity: 0.25;
+    }
+</style>
+
+<div class="container-fluid mt-3">
+
+    <h4 class="fw-bold mb-3">
+        <i class="bi bi-speedometer2 me-1"></i>
+        System Dashboard Overview
+    </h4>
+
+    <!-- ================= KPI CARDS ================= -->
+    <div class="row g-3 mb-4">
+
+        <!-- Revenue -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card shadow-sm border-0 text-white"
+                 style="background:#1f2937;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase text-white-50">Revenue Today</h6>
+                        <h3>CDF @Model.RevenueTodayCDF.ToString("N0")</h3>
+                    </div>
+                    <i class="bi bi-cash-stack kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tickets -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card shadow-sm border-0 text-white"
+                 style="background:#065f46;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase text-white-50">Tickets Sold</h6>
+                        <h3>@Model.TicketsSoldToday</h3>
+                    </div>
+                    <i class="bi bi-ticket-perforated kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Passengers -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card shadow-sm border-0 text-white"
+                 style="background:#6b3804;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase text-white-50">Passengers Today</h6>
+                        <h3>@Model.PassengersToday</h3>
+                    </div>
+                    <i class="bi bi-people-fill kpi-icon text-muted"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Buses -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card shadow-sm border-0 text-white"
+                 style="background:#312e81;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase text-white-50">Active Buses</h6>
+                        <h3>@Model.ActiveBuses</h3>
+                    </div>
+                    <i class="bi bi-bus-front-fill kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= ROUTES SUMMARY ================= -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-primary shadow-sm py-2">
+                <i class="bi bi-signpost-split me-1"></i>
+                <strong>@Model.TotalRoutes</strong>
+                active inter-city routes operating across DR Congo today
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= RECENT BOOKINGS ================= -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white py-2">
+            <i class="bi bi-clock-history me-1"></i>
+            Recent Ticket Sales
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ticket No</th>
+                        <th>Passenger</th>
+                        <th>Route</th>
+                        <th>Fare (CDF)</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model.RecentBookings)
+                    {
+                        <tr>
+                            <td class="fw-bold">@b.TicketNo</td>
+                            <td>@b.Passenger</td>
+                            <td>@b.Route</td>
+                            <td>CDF @b.Amount.ToString("N0")</td>
+                            <td class="text-muted">@b.Time</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>

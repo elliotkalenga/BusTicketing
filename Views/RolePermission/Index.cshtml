@@ -1,0 +1,203 @@
+﻿@model List<BusTicketing.Models.Auth.Role>
+@{
+    Layout = "_Layout";
+}
+
+<div class="container-fluid mt-2">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0"><i class="bi bi-lock-fill me-2"></i> Role Permissions</h4>
+        <button class="btn btn-dark-blue" data-bs-toggle="modal" data-bs-target="#assignModal" onclick="clearForm()">
+            <i class="bi bi-plus-circle me-1"></i> Assign Permissions
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table id="rolesTable" class="table table-striped table-bordered display nowrap" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Role</th>
+                    <th>Permissions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>@r.Name</td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-perms-btn" data-roleid="@r.Id">
+                                <i class="bi bi-eye-fill"></i> View Permissions
+                            </button>
+                            <div class="permissions-list mt-1 d-none">
+                                <div class="row">
+                                    @foreach (var rp in r.RolePermissions)
+                                    {
+                                        <div class="col-12 col-md-4 mb-1">
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-shield-fill-check me-1"></i>@rp.Permission.Code
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Assign Permissions Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" asp-action="Save" class="needs-validation" novalidate>
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title"><i class="bi bi-key-fill me-1"></i> Assign Permissions</h5>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i> Close
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label><i class="bi bi-shield"></i> Select Role</label>
+                        <select class="form-control" name="RoleId" id="RoleId" required>
+                            <option value="">-- Select Role --</option>
+                            @foreach (var r in Model)
+                            {
+                                <option value="@r.Id">@r.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label><i class="bi bi-key"></i> Select Permissions</label>
+                        <div class="accordion" id="permissionsAccordion">
+                            @foreach (var category in ((List<BusTicketing.Models.Auth.Permission>)ViewBag.Permissions).GroupBy(p => p.Description))
+                            {
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading-@category.Key">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@category.Key" aria-expanded="true" aria-controls="collapse-@category.Key">
+                                            @category.Key
+                                        </button>
+                                    </h2>
+                                    <div id="collapse-@category.Key" class="accordion-collapse collapse show" aria-labelledby="heading-@category.Key" data-bs-parent="#permissionsAccordion">
+                                        <div class="accordion-body">
+                                            <div class="row">
+                                                @foreach (var p in category)
+                                                {
+                                                    <div class="col-12 col-md-4 mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input perm-checkbox custom-checkbox" type="checkbox" name="PermissionIds" value="@p.Id" id="perm_@p.Id">
+                                                            <label class="form-check-label" for="perm_@p.Id">
+                                                                <i class="bi bi-shield-fill-check me-1"></i> @p.Code
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <small class="text-muted">Tick to assign permissions.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i> Close
+                    </button>
+                    <button type="submit" class="btn btn-dark-blue">
+                        <i class="bi bi-save me-1"></i> Save
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Black border checkboxes */
+    .custom-checkbox {
+        border: 2px solid black;
+        width: 1.2rem;
+        height: 1.2rem;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const ts = getTimestamp();
+
+            // DataTable initialization with full buttons
+            $('#rolesTable').DataTable({
+                responsive: true,
+                dom: 'Bfrtip',
+                buttons: [
+                    { extend: 'copyHtml5', className: 'btn btn-sm btn-outline-primary', title: 'RolePermissions_' + ts },
+                    { extend: 'excelHtml5', className: 'btn btn-sm btn-outline-success', title: 'RolePermissions_' + ts },
+                    { extend: 'csvHtml5', className: 'btn btn-sm btn-outline-warning', title: 'RolePermissions_' + ts },
+                    { extend: 'pdfHtml5', className: 'btn btn-sm btn-outline-danger', title: 'RolePermissions_' + ts },
+                    { extend: 'print', className: 'btn btn-sm btn-outline-info', title: 'RolePermissions_' + ts },
+                    { extend: 'colvis', className: 'btn btn-sm btn-outline-secondary' }
+                ]
+            });
+
+            // Toggle permissions list
+            $('#rolesTable').on('click', '.view-perms-btn', function () {
+                var $btn = $(this);
+                var $row = $btn.closest('tr');
+                if ($row.hasClass('child')) $row = $row.prev(); // mobile responsive
+                $row.find('.permissions-list').toggleClass('d-none');
+            });
+
+            // Role -> Permissions mapping
+            var rolePermsMap = {};
+            @foreach (var r in Model)
+            {
+                    <text>
+                    rolePermsMap[@r.Id] = [@string.Join(",", r.RolePermissions.Select(rp => rp.PermissionId))];
+                    </text>
+            }
+
+            // Update checkboxes when role is selected
+            $('#RoleId').on('change', function () {
+                var selectedRoleId = $(this).val();
+                $('.perm-checkbox').prop('checked', false); // clear all first
+                if (selectedRoleId && rolePermsMap[selectedRoleId]) {
+                    var perms = rolePermsMap[selectedRoleId].toString().split(',');
+                    perms.forEach(function(pid) {
+                        $('#perm_' + pid).prop('checked', true);
+                    });
+                }
+            });
+        });
+
+        function clearForm() {
+            $('#RoleId').val('');
+            $('.perm-checkbox').prop('checked', false);
+        }
+    </script>
+}

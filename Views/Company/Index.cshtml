@@ -1,0 +1,260 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using BusTicketing.Models.Company
+@inject IViewLocalizer V
+@model List<BusTicketing.Models.Company.Company>
+
+@{
+    Layout = "_Layout";
+    string ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+}
+
+<div class="container-fluid mt-2">
+
+    <!-- Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-1"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">
+            <i class="bi bi-buildings-fill me-1"></i> @V["CompanyManagement"]
+        </h4>
+
+        <button class="btn btn-dark-blue" data-bs-toggle="modal" data-bs-target="#companyModal" onclick="clearForm()">
+            <i class="bi bi-plus-circle"></i> @V["NewCompany"]
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table id="companiesTable" class="table table-striped table-bordered w-100">
+            <thead class="table-light">
+                <tr>
+                    <th>Id</th>
+                    <th>@V["Name"]</th>
+                    <th>@V["RegistrationNumber"]</th>
+                    <th>@V["Address"]</th>
+                    <th>@V["Phone"]</th>
+                    <th>Created</th>
+                    <th>@V["Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    var rv = c.RowVersion != null ? Convert.ToBase64String(c.RowVersion) : "";
+                    <tr>
+                        <td>@c.Id</td>
+                        <td>@c.Name</td>
+                        <td>@c.RegistrationNumber</td>
+                        <td>@c.Address</td>
+                        <td>@c.Phone</td>
+                        <td>@c.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td class="text-nowrap">
+                            <button class="btn btn-sm btn-outline-primary edit-company-btn"
+                                    data-bs-toggle="modal" data-bs-target="#companyModal"
+                                    data-id="@c.Id"
+                                    data-name="@c.Name"
+                                    data-registration="@c.RegistrationNumber"
+                                    data-address="@c.Address"
+                                    data-phone="@c.Phone"
+                                    data-rowversion="@rv">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger delete-company-btn"
+                                    data-id="@c.Id"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteConfirmModal">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Company Modal (Add/Edit) -->
+<div class="modal fade" id="companyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" asp-action="Save" class="needs-validation" novalidate>
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-buildings-fill me-1"></i> @V["CompanyManagement"]
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="companyId" />
+                    <input type="hidden" name="RowVersion" id="companyRowVersion" />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="companyName" class="form-label">
+                                <i class="bi bi-tag-fill me-1"></i> @V["Name"]
+                            </label>
+                            <input type="text"
+                                   name="Name"
+                                   id="companyName"
+                                   class="form-control"
+                                   placeholder="@V["EnterCompanyName"]"
+                                   maxlength="200"
+                                   required />
+                            <div class="invalid-feedback">@V["NameRequired"]</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="companyReg" class="form-label">
+                                <i class="bi bi-card-list me-1"></i> @V["RegistrationNumber"]
+                            </label>
+                            <input type="text"
+                                   name="RegistrationNumber"
+                                   id="companyReg"
+                                   class="form-control"
+                                   placeholder="@V["EnterRegistrationNumber"]"
+                                   maxlength="100"
+                                   required />
+                            <div class="invalid-feedback">@V["RegistrationNumberRequired"]</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="companyAddress" class="form-label">
+                                <i class="bi bi-geo-alt-fill me-1"></i> @V["Address"]
+                            </label>
+                            <textarea name="Address"
+                                      id="companyAddress"
+                                      class="form-control"
+                                      placeholder="@V["EnterAddress"]"
+                                      rows="3"
+                                      maxlength="500"
+                                      required></textarea>
+                            <div class="invalid-feedback">@V["AddressRequired"]</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="companyPhone" class="form-label">
+                                <i class="bi bi-telephone-fill me-1"></i> @V["Phone"]
+                            </label>
+                            <input type="text"
+                                   name="Phone"
+                                   id="companyPhone"
+                                   class="form-control"
+                                   placeholder="@V["EnterPhone"]"
+                                   maxlength="50"
+                                   required />
+                            <div class="invalid-feedback">@V["PhoneRequired"]</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> @V["Close"]
+                    </button>
+                    <button type="submit" class="btn btn-dark-blue">
+                        <i class="bi bi-save"></i> @V["Save"]
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="deleteForm" method="post">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-1"></i> @V["ConfirmDelete"]</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@V["AreYouSureDelete"]</p>
+                    <input type="hidden" name="id" id="deleteCompanyId" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@V["Cancel"]</button>
+                    <button type="submit" class="btn btn-danger">@V["Delete"]</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const ts = '@ts';
+
+        $(document).ready(function () {
+            $('#companiesTable').DataTable({
+                responsive: true,
+                dom: 'Bfrtip',
+                buttons: [
+                    { extend: 'copyHtml5', className: 'btn btn-sm btn-outline-primary', title: 'Companies_' + ts },
+                    { extend: 'excelHtml5', className: 'btn btn-sm btn-outline-success', title: 'Companies_' + ts },
+                    { extend: 'csvHtml5', className: 'btn btn-sm btn-outline-warning', title: 'Companies_' + ts },
+                    { extend: 'pdfHtml5', className: 'btn btn-sm btn-outline-danger', title: 'Companies_' + ts },
+                    { extend: 'print', className: 'btn btn-sm btn-outline-info', title: 'Companies_' + ts },
+                    { extend: 'colvis', className: 'btn btn-sm btn-outline-secondary' }
+                ]
+            });
+        });
+
+        function clearForm() {
+            $('#companyId').val(0);
+            $('#companyRowVersion').val('');
+            $('#companyName').val('');
+            $('#companyReg').val('');
+            $('#companyAddress').val('');
+            $('#companyPhone').val('');
+        }
+
+        $('#companiesTable').on('click', '.edit-company-btn', function () {
+            const btn = $(this);
+            $('#companyId').val(btn.data('id'));
+            $('#companyRowVersion').val(btn.data('rowversion'));
+            $('#companyName').val(btn.data('name'));
+            $('#companyReg').val(btn.data('registration'));
+            $('#companyAddress').val(btn.data('address'));
+            $('#companyPhone').val(btn.data('phone'));
+        });
+
+        // Delete modal
+        $('#companiesTable').on('click', '.delete-company-btn', function () {
+            const companyId = $(this).data('id');
+            $('#deleteCompanyId').val(companyId);
+            $('#deleteForm').attr('action', '/Company/Delete');
+        });
+
+        // Bootstrap validation
+        (() => {
+            'use strict';
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+}

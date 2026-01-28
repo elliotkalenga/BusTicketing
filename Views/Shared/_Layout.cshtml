@@ -1,0 +1,530 @@
+﻿@inject BusTicketing.Services.PermissionService PermissionService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IViewLocalizer V
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Bus Ticketing System</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css" rel="stylesheet" />
+
+    <style>
+        body {
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+    font-family: "Century Gothic", CenturyGothic, AppleGothic, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: 260px;
+            height: calc(100vh - 56px);
+            position: fixed;
+            top: 56px;
+            background: #0d1b2a;
+            color: white;
+            transition: all .3s;
+        }
+
+            #sidebar a {
+                color: #e0e1dd;
+                text-decoration: none;
+            }
+
+                #sidebar a:hover {
+                    color: #c9a52f;;
+                }
+
+        .sidebar-header {
+            padding: 20px;
+            font-size: 1.3rem;
+            text-align: center;
+            font-weight: bold;
+            background: #1b263b;
+            border-bottom: 1px solid #415a77;
+        }
+
+        /* Sidebar scroll only if items exceed viewport */
+        #sidebar {
+            width: 260px;
+            height: calc(100vh - 56px);
+            position: fixed;
+            top: 56px;
+            background: #0d1b2a;
+            color: white;
+            transition: all .3s;
+            overflow-y: auto; /* enable scrolling if content is too long */
+        }
+
+            /* Hide scrollbar on small sidebars if not needed (optional) */
+            #sidebar::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            #sidebar::-webkit-scrollbar-thumb {
+                background-color: rgba(255, 127, 80, 0.5);
+                border-radius: 3px;
+            }
+
+
+        .sidebar-link {
+            padding: 12px 20px;
+            display: block;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-dropdown .submenu {
+            display: none;
+        }
+
+        .sidebar-dropdown.open .submenu {
+            display: block;
+        }
+
+        /* Content & Footer */
+        #content {
+            margin-left: 260px;
+            margin-top: 70px;
+            transition: all .3s;
+            padding: 20px;
+            flex: 1;
+        }
+
+        footer {
+            background-color: #1b263b;
+            color: #e0e1dd;
+            text-align: center;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Navbar colors */
+        .navbar {
+            background-color: #0d1b2a;
+        }
+
+            .navbar .nav-link, .navbar .navbar-brand {
+                color: #c9a52f;;
+            }
+
+                .navbar .nav-link:hover {
+                    color: #ffffff;
+                }
+
+        .btn-outline-light {
+            border-color: #c9a52f;;
+            color: #c9a52f;;
+        }
+
+            .btn-outline-light:hover {
+                background-color: #c9a52f;;
+                color: #0d1b2a;
+            }
+
+        /* DataTables custom */
+        .btn-dark-blue {
+            background-color: #1f2a38;
+            border-color: #1f2a38;
+            color: #fff;
+        }
+
+            .btn-dark-blue:hover {
+                background-color: #323e4d;
+                border-color: #323e4d;
+            }
+
+        table.dataTable thead th {
+            background-color: #1f2a38;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        table.dataTable tbody tr:nth-child(even) {
+            background-color: #f1f3f5;
+        }
+
+        table.dataTable tbody tr:hover {
+            background-color: #e9ecef;
+        }
+        @@media (max-width: 991.98px) { /* for screens md and below */
+        body {
+            padding-top: 70px; /* adjust to your navbar height */
+        }
+    }
+        /* Mobile sidebar overlay */
+        @@media (max-width: 768px) {
+            #sidebar {
+                margin-left: -260px;
+                z-index: 1050;
+                box-shadow: 2px 0 8px rgba(0,0,0,0.4);
+            }
+
+                #sidebar.show {
+                    margin-left: 0;
+                }
+
+            #content {
+                margin-left: 0 !important;
+            }
+
+            .dt-buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                margin-bottom: 0.5rem;
+            }
+        }
+    </style>
+
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm">
+        <div class="container-fluid">
+            <!-- Sidebar toggle button for mobile -->
+            <button class="btn btn-outline-light me-3 d-md-none" id="toggleSidebar">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <!-- Company name / brand -->
+            <span class="navbar-brand fw-bold">
+                @HttpContextAccessor.HttpContext.Session.GetString("CompanyName")
+            </span>
+
+            <!-- Right side items -->
+
+            <div class="ms-auto d-flex align-items-center">
+                <span class="nav-link me-3 text-white fw-bold">
+                    <i class="bi bi-person-circle me-1"></i>
+                    @HttpContextAccessor.HttpContext.Session.GetString("FullName")
+                </span>
+
+                <a href="/Notifications" class="nav-link me-3">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                </a>
+                <a href="/ChangePassword/ChangeOwnPassword" class="nav-link me-3">
+                    <i class="bi bi-key-fill"></i> @V["ChangePassword"]
+                </a>
+
+                <!-- ✅ Language Switcher -->
+                <form asp-controller="Culture" asp-action="Set" method="post" class="d-inline me-3">
+                    <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+
+                    @{
+                        var current = System.Globalization.CultureInfo.CurrentUICulture.Name;
+                    }
+
+                    <select name="culture" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto;">
+                        <option value="en" selected="@(current.StartsWith("en"))">English</option>
+                        <option value="fr" selected="@(current.StartsWith("fr"))">Français</option>
+                    </select>
+                </form>
+                <!-- ✅ End Language Switcher -->
+
+                <a href="/Login/Logout" class="nav-link text-warning fw-bold">
+                    <i class="bi bi-box-arrow-right"></i> @V["Logout"]
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar">
+        <div class="sidebar-header text-center">
+            <div class="fw-bold" style="font-size: 0.9rem;"><i class="bi bi-bus-front"></i>
+BUS TICKETING SYSTEM</div>
+        </div>
+
+        <!-- Dashboard -->
+ 
+            <a href="/Dashboard" class="sidebar-link"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+       
+
+        <!-- Auth Section -->
+ 
+ @if (PermissionService.HasPermission("View_Users") || PermissionService.HasPermission("ViewRoles") || PermissionService.HasPermission("ManagePermissions"))
+        {
+            <div class="sidebar-dropdown">
+                <a href="#" class="sidebar-link dropdown-toggle"><i class="bi bi-people me-2"></i> @V["Security"]</a>
+                <div class="submenu ps-4">
+                    @if (PermissionService.HasPermission("View_Users"))
+                    {
+                        <a href="/Users" class="sidebar-link"><i class="bi bi-person-fill me-2"></i>@V["ManageUsers"]</a>
+                    }
+                    @if (PermissionService.HasPermission("View_Roles"))
+                    {
+                        <a href="/UserRole" class="sidebar-link"><i class="bi bi-shield-lock-fill me-2"></i>@V["AssignRoles"]</a>
+                    }
+                    @if (PermissionService.HasPermission("ManageRoles"))
+                    {
+                        <a href="/Role" class="sidebar-link"><i class="bi bi-shield-lock-fill me-2"></i> @V["ManageRoles"]</a>
+                    }
+                    @if (PermissionService.HasPermission("ManagePermissions"))
+                    {
+                        <a href="/RolePermission" class="sidebar-link"><i class="bi bi-key-fill me-2"></i> @V["AssignPermissions"]</a>
+                    }
+
+                    @if (PermissionService.HasPermission("ManagePermissions"))
+                    {
+                        <a href="/Permission" class="sidebar-link"><i class="bi bi-key-fill me-2"></i> @V["Permissions"]</a>
+                    }
+                    @if (PermissionService.HasPermission("Reset_Password"))
+                    {
+                        <a href="/ChangePassword" class="sidebar-link"><i class="bi bi-key-fill me-2"></i>@V["ResetPassword"]</a>
+                    }
+                </div>
+            </div>
+        }
+
+
+        @if (PermissionService.HasPermission("Create_Campanies") ||
+                PermissionService.HasPermission("Manage_Agencies") ||
+                PermissionService.HasPermission("Delete_Companies") ||
+                PermissionService.HasPermission("Update_Companies") ||
+                PermissionService.HasPermission("View_Companies"))
+        {
+            <div class="sidebar-dropdown">
+                <a href="#" class="sidebar-link dropdown-toggle">
+                    <i class="bi bi-gear-fill me-2"></i> @V["Settings"]
+                </a>
+
+                <div class="submenu ps-4">
+
+                    @if (PermissionService.HasPermission("View_Companies"))
+                    {
+                        <a href="/Company" class="sidebar-link">
+                            <i class="bi bi-buildings me-2"></i>@V["ManageCompanies"]
+                        </a>
+                    }
+
+                    @if (PermissionService.HasPermission("Manage_Agencies"))
+                    {
+                        <a href="/Agency" class="sidebar-link">
+                            <i class="bi bi-diagram-2 me-2"></i>@V["ManageAgencies"]
+                        </a>
+                    }
+                    @if (PermissionService.HasPermission("Manage_Locations"))
+                    {
+                        <a href="/LocationSetup" class="sidebar-link">
+                            <i class="bi bi-diagram-2 me-2"></i>@V["ManageLocations"]
+                        </a>
+                    }
+
+
+
+
+
+                </div>
+            </div>
+        }
+
+        @if (PermissionService.HasPermission("Create_Buses") ||
+                PermissionService.HasPermission("update_Buses") ||
+                PermissionService.HasPermission("Delete_Buses") ||
+                PermissionService.HasPermission("View_Buses") ||
+                PermissionService.HasPermission("Create_Seats") ||
+                PermissionService.HasPermission("Update_Seats") ||
+                PermissionService.HasPermission("View_Seats") ||
+                PermissionService.HasPermission("Delete_Seats") ||
+                PermissionService.HasPermission("Update_Routes") ||
+                PermissionService.HasPermission("View_Routes") ||
+                PermissionService.HasPermission("Delete_Routes") ||
+                PermissionService.HasPermission("Create_Routes") ||
+                PermissionService.HasPermission("Create_Schedules") ||
+                PermissionService.HasPermission("Update_Schedules") ||
+                PermissionService.HasPermission("View_Schedules") ||
+                PermissionService.HasPermission("Delete_Schedules") ||
+                PermissionService.HasPermission("Create_Drivers") ||
+                PermissionService.HasPermission("Update_Drivers") ||
+                PermissionService.HasPermission("View_Drivers") ||
+                PermissionService.HasPermission("Delete_Drivers") ||
+                PermissionService.HasPermission("ManagePassengers"))
+        {
+            <div class="sidebar-dropdown">
+                <a href="#" class="sidebar-link dropdown-toggle">
+                    <i class="bi bi-bus-front me-2"></i> @V["Fleet Management"]
+                </a>
+
+                <div class="submenu ps-4">
+
+                    @if (PermissionService.HasPermission("View_Buses"))
+                    {
+                        <a href="/Bus" class="sidebar-link">
+                            <i class="bi bi-bus-front me-2"></i>@V["Bus Management"]
+                        </a>
+                    }
+
+                    @if (PermissionService.HasPermission("Manage_Seat_Definitions"))
+                    {
+                        <a href="/SeatDefinition" class="sidebar-link">
+                            <i class="bi bi-grid-1x2 me-2"></i>@V["Seats Management"]
+                        </a>
+                    }
+
+                    @if (PermissionService.HasPermission("Manage_Seat_SeatLayouts"))
+                    {
+                        <a href="/SeatLayout" class="sidebar-link">
+                            <i class="bi bi-grid-1x2 me-2"></i>@V["Bus Seat Layouts"]
+                        </a>
+                    }
+
+                    @if (PermissionService.HasPermission("Manage_Bus_Amenities"))
+                    {
+                        <a href="/BusAmenity" class="sidebar-link">
+                            <i class="bi bi-grid-1x2 me-2"></i>@V["Bus Amenities"]
+                        </a>
+                    }
+                    
+
+                    @if (PermissionService.HasPermission("View_Routes"))
+                    {
+                        <a href="/BusRoute" class="sidebar-link">
+                            <i class="bi bi-map me-2"></i>@V["Bus Routes"]
+                        </a>
+                    }
+
+                    @if (PermissionService.HasPermission("View_Schedules"))
+                    {
+                        <a href="/Schedule" class="sidebar-link">
+                            <i class="bi bi-calendar-event me-2"></i>@V["Schedule"]
+                        </a>
+                    }
+
+                    @if (PermissionService.HasPermission("View_Drivers"))
+                    {
+                        <a href="/Driver" class="sidebar-link">
+                            <i class="bi bi-person-badge me-2"></i>@V["Drivers"]
+                        </a>
+                    }
+
+                    @if (PermissionService.HasPermission("View_Passengers"))
+                    {
+                        <a href="/Passenger" class="sidebar-link">
+                            <i class="bi bi-people me-2"></i>@V["Passengers"]
+                        </a>
+                    }
+
+                </div>
+            </div>
+        }
+
+
+
+        @if (PermissionService.HasPermission("Create_Campanies") ||
+                PermissionService.HasPermission("Manage_Agencies") ||
+                PermissionService.HasPermission("Delete_Companies") ||
+                PermissionService.HasPermission("Update_Companies") ||
+                PermissionService.HasPermission("View_Companies"))
+        {
+            <div class="sidebar-dropdown">
+                <a href="#" class="sidebar-link dropdown-toggle">
+                    <i class="bi bi-gear-fill me-2"></i> @V["Network"]
+                </a>
+
+                <div class="submenu ps-4">
+
+                    @if (PermissionService.HasPermission("Manage_Bus_Routes"))
+                    {
+                        <a href="/BusRoute" class="sidebar-link">
+                            <i class="bi bi-buildings me-2"></i>@V["Bus Routes"]
+                        </a>
+                    }
+
+                    @if (PermissionService.HasPermission("Manage_Route_Stops"))
+                    {
+                        <a href="/RouteStop" class="sidebar-link">
+                            <i class="bi bi-diagram-2 me-2"></i>@V["Routes Stops"]
+                        </a>
+                    }
+                    @if (PermissionService.HasPermission("Manage_Fare_Rules"))
+                    
+                    @if(PermissionService.HasPermission("Manage_Trips"))
+                    {
+                        <a href="/Trips" class="sidebar-link">
+                            <i class="bi bi-diagram-2 me-2"></i>@V["Manage Trips"]
+                        </a>
+                    }
+
+
+
+
+
+                </div>
+            </div>
+        }
+
+
+    </nav>
+
+    <!-- CONTENT -->
+    <div id="content">
+        @RenderBody()
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="text-center py-2" style="background-color:#1b263b; color:#e0e1dd;">
+        &copy; @DateTime.Now.Year Bus Ticketing System. All Rights Reserved.
+        Developed by
+        <a href="https://fecomastechsolutions.com" target="_blank" style="color:#c9a52f;; text-decoration:none;">
+            Fecomas Tech Solutions
+        </a>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.colVis.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script>
+        // Sidebar toggle for mobile
+        document.getElementById("toggleSidebar").addEventListener("click", function () {
+            document.getElementById("sidebar").classList.toggle("show");
+        });
+
+        // Sidebar dropdown toggles
+        document.querySelectorAll(".sidebar-dropdown > .dropdown-toggle").forEach(toggle => {
+            toggle.addEventListener("click", function () {
+                this.parentElement.classList.toggle("open");
+            });
+        });
+
+        // Timestamp helper
+        function getTimestamp() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}_${hh}-${min}`;
+        }
+    </script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

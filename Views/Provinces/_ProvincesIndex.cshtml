@@ -1,0 +1,178 @@
+﻿@model List<BusTicketing.ViewModels.ProvinceFormVm>
+
+@{
+    string showModal = TempData["ShowProvinceModal"]?.ToString() ?? "false";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Provinces</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+    <style>
+        .btn-dark-blue {
+            background-color: #0b3d91;
+            color: #fff;
+        }
+
+            .btn-dark-blue:hover {
+                background-color: #082b68;
+                color: #fff;
+            }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-3">
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="m-0">
+                <i class="bi bi-map-fill me-2"></i> Provinces
+            </h4>
+            <button class="btn btn-dark-blue"
+                    data-bs-toggle="modal"
+                    data-bs-target="#provinceModal"
+                    onclick="clearProvinceForm()">
+                <i class="bi bi-plus-circle me-1"></i> Add Province
+            </button>
+        </div>
+
+        <table id="provinceTable" class="table table-striped table-bordered w-100">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th style="width:140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model ?? Enumerable.Empty<BusTicketing.ViewModels.ProvinceFormVm>())
+                {
+                    <tr>
+                        <td>@p.Name</td>
+                        <td>@p.Code</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-warning edit-btn"
+                                    data-id="@p.Id"
+                                    data-name="@p.Name"
+                                    data-code="@p.Code"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#provinceModal">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+
+                            <form method="post" asp-action="Delete" asp-controller="Provinces" class="d-inline"
+                                  onsubmit="return confirm('Delete this province?');">
+                                <input type="hidden" name="id" value="@p.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal fade" id="provinceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form method="post" asp-action="Save" asp-controller="Provinces">
+                <div class="modal-content">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title"><i class="bi bi-map-fill me-1"></i> Province</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="provinceId" name="Id" value="0" />
+
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-geo-alt me-1"></i> Province Name</label>
+                            <input class="form-control" id="provinceName" name="Name" placeholder="Enter province name" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-hash me-1"></i> Code</label>
+                            <input class="form-control" id="provinceCode" name="Code" placeholder="Enter code (optional)" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-dark-blue"><i class="bi bi-save me-1"></i> Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Only initialize if not already a DataTable
+            if (!$.fn.DataTable.isDataTable('#provinceTable')) {
+                $('#provinceTable').DataTable({
+                    responsive: true,
+                    dom: 'Bfrtip',
+                    buttons: [
+                        { extend: 'excel', text: '<i class="bi bi-file-earmark-excel me-1"></i> Excel' },
+                        { extend: 'pdf', text: '<i class="bi bi-file-earmark-pdf me-1"></i> PDF' },
+                        { extend: 'print', text: '<i class="bi bi-printer me-1"></i> Print' }
+                    ]
+                });
+            }
+
+            // Edit button click: populate modal fields
+            $('#provinceTable').on('click', '.edit-btn', function () {
+                const btn = $(this);
+                $('#provinceId').val(btn.data('id'));
+                $('#provinceName').val(btn.data('name'));
+                $('#provinceCode').val(btn.data('code'));
+            });
+
+            // Show modal if TempData triggered it
+            if ('@showModal'.toLowerCase() === 'true') {
+                var myModal = new bootstrap.Modal(document.getElementById('provinceModal'));
+                myModal.show();
+            }
+        });
+
+        function clearProvinceForm() {
+            $('#provinceId').val(0);
+            $('#provinceName').val('');
+            $('#provinceCode').val('');
+        }
+    </script>
+
+</body>
+</html>

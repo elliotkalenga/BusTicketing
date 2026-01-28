@@ -1,0 +1,246 @@
+﻿@model List<BusTicketing.ViewModels.SeatDefinitionFormVm>
+
+@{
+    Layout = "_Layout";
+
+    string showModal = TempData["ShowSeatModal"]?.ToString() ?? "false";
+    string errHtml = TempData["ErrorDetailsHtml"]?.ToString() ?? "";
+
+    var seatLayouts = ViewBag.SeatLayouts as IEnumerable<dynamic>
+                      ?? Enumerable.Empty<dynamic>();
+
+    var seatClasses = ViewBag.SeatClasses as IEnumerable<(int value, string text)>
+                      ?? new List<(int, string)>
+                      {
+                          (0,"Economy"),
+                          (1,"Business"),
+                          (2,"VIP")
+                      };
+}
+
+<div class="container-fluid mt-2">
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <div class="fw-bold mb-1">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                @TempData["ErrorMessage"]
+            </div>
+            @Html.Raw(errHtml)
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0">
+            <i class="bi bi-grid-3x3-gap-fill me-2"></i> Seat Definitions
+        </h4>
+        <button class="btn btn-dark-blue" data-bs-toggle="modal"
+                data-bs-target="#seatModal" onclick="clearSeatForm()">
+            <i class="bi bi-plus-circle me-1"></i> Add Seat
+        </button>
+    </div>
+
+    <table id="seatsTable" class="table table-striped table-bordered w-100">
+        <thead>
+            <tr>
+                <th>Seat</th>
+                <th>Class</th>
+                <th>Aisle</th>
+                <th>Layout</th>
+                <th style="width:160px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model ?? Enumerable.Empty<BusTicketing.ViewModels.SeatDefinitionFormVm>())
+            {
+                <tr>
+                    <td>@s.SeatNumber</td>
+                    <td>@(s.Class == 0 ? "Economy" : s.Class == 1 ? "Business" : "VIP")</td>
+                    <td>@(s.IsAisle ? "Yes" : "No")</td>
+                    <td>@s.SeatLayoutDisplay</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning edit-seat-btn"
+                                data-bs-toggle="modal" data-bs-target="#seatModal"
+                                data-id="@s.Id"
+                                data-layout="@s.SeatLayoutId"
+                                data-seat="@s.SeatNumber"
+                                data-class="@s.Class"
+                                data-aisle="@s.IsAisle">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+
+                        <form method="post" asp-action="Delete" class="d-inline"
+                              onsubmit="return confirm('Delete this seat?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@s.Id" />
+                            <button class="btn btn-sm btn-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="seatModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="post" asp-action="Save" class="needs-validation" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Seat Definition</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <input type="hidden" name="Id" id="seatId"
+                           value="@TempData["Form.Id"] ?? " 0"" />
+
+                    <div class="row g-3">
+
+                        <!-- Seat Layout -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-grid-3x3-gap me-1"></i> Seat Layout
+                            </label>
+                            @{
+                                int postedLayout = int.TryParse(
+                                TempData["Form.SeatLayoutId"]?.ToString(), out var pl) ? pl : 0;
+                            }
+                            <select name="SeatLayoutId" id="seatLayoutId"
+                                    class="form-select" required>
+                                <option value="">-- Select seat layout --</option>
+                                @foreach (var sl in seatLayouts)
+                                {
+                                    if (postedLayout == (int)sl.Id)
+                                    {
+                                        <option value="@sl.Id" selected>@sl.Display</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@sl.Id">@sl.Display</option>
+                                    }
+                                }
+                            </select>
+                            <div class="invalid-feedback">Seat layout is required.</div>
+                        </div>
+
+                        <!-- Seat Number -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-hash me-1"></i> Seat Number
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="seatNumber"
+                                   name="SeatNumber"
+                                   maxlength="8"
+                                   placeholder="e.g. 1A, 12C"
+                                   value="@TempData["Form.SeatNumber"]"
+                                   required />
+                            <div class="invalid-feedback">Seat number is required.</div>
+                        </div>
+
+                        <!-- Seat Class -->
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-star-fill me-1"></i> Seat Class
+                            </label>
+                            @{
+                                int postedClass = int.TryParse(
+                                TempData["Form.Class"]?.ToString(), out var pc) ? pc : 0;
+                            }
+                            <select name="Class" id="seatClass"
+                                    class="form-select" required>
+                                <option value="">-- Select class --</option>
+                                @foreach (var c in seatClasses)
+                                {
+                                    if (postedClass == c.value)
+                                    {
+                                        <option value="@c.value" selected>@c.text</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@c.value">@c.text</option>
+                                    }
+                                }
+                            </select>
+                            <div class="invalid-feedback">Seat class is required.</div>
+                        </div>
+
+                        <!-- Is Aisle -->
+                        <div class="col-md-6 d-flex align-items-center">
+                            @{
+                                bool isAisle =
+                                (TempData["Form.IsAisle"]?.ToString() ?? "false")
+                                .Equals("true", StringComparison.OrdinalIgnoreCase);
+                            }
+                            <div class="form-check mt-4">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="isAisle"
+                                       name="IsAisle"
+                                       value="true"
+                                       @(isAisle ? "checked" : "") />
+                                <label class="form-check-label">
+                                    <i class="bi bi-arrows-collapse-vertical me-1"></i>
+                                    Is Aisle Seat
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-dark-blue">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+
+            $('#seatsTable').DataTable({ responsive: true });
+
+            if ('@showModal'.toLowerCase() === 'true') {
+                new bootstrap.Modal('#seatModal').show();
+            }
+
+            $('#seatsTable').on('click', '.edit-seat-btn', function () {
+                const b = $(this);
+                $('#seatId').val(b.data('id'));
+                $('#seatLayoutId').val(b.data('layout'));
+                $('#seatNumber').val(b.data('seat'));
+                $('#seatClass').val(b.data('class'));
+                $('#isAisle').prop('checked', String(b.data('aisle')).toLowerCase() === 'true');
+            });
+        });
+
+        function clearSeatForm() {
+            $('#seatId').val(0);
+            $('#seatLayoutId').val('');
+            $('#seatNumber').val('');
+            $('#seatClass').val(0);
+            $('#isAisle').prop('checked', false);
+        }
+    </script>
+}
